@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Reel Memory</title>
+
+<!-- iOS PWA install support -->
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Reel Memory">
+<meta name="theme-color" content="#121212">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<link rel="icon" href="/static/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800&display=swap" rel="stylesheet">
+<style>
+:root{
+ --bg:#121212;--bg2:#1f1f1f;--card:#181818;--card-h:#252525;
+ --fg:#ffffff;--muted:#b3b3b3;--line:#2a2a2a;
+ --accent:#1ed760;--accent-d:#1db954;
+ --warn:#ffa42b;--info:#539df5;--err:#f3727f;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;overflow-x:hidden;max-width:100vw}
+body{background:var(--bg);color:var(--fg);
+ font-family:'DM Sans',-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+ min-height:100vh;min-height:100dvh}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 18px calc(100px + env(safe-area-inset-bottom));overflow-x:hidden}
+.head{display:flex;align-items:center;gap:12px;margin-bottom:4px;
+ padding-top:env(safe-area-inset-top)}
+.logo{width:40px;height:40px;border-radius:10px;background:var(--accent);display:grid;place-items:center;
+ font-size:20px}
+h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em}
+.sub{color:var(--muted);font-size:13px;margin:4px 0 20px;display:flex;gap:16px;flex-wrap:wrap;font-weight:400}
+.sub b{color:var(--fg);font-weight:700}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;margin-right:5px;
+ box-shadow:0 0 8px var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.searchwrap{position:sticky;top:12px;z-index:10;margin-bottom:12px}
+.searchbar{display:flex;gap:8px;background:var(--bg2);border-radius:9999px;padding:6px;
+ box-shadow:rgb(18,18,18) 0 1px 0,rgb(124,124,124) 0 0 0 1px inset}
+.searchbar:focus-within{box-shadow:rgb(18,18,18) 0 1px 0,var(--accent) 0 0 0 2px inset}
+#q{flex:1;background:transparent;border:0;color:var(--fg);padding:12px 16px;font-size:16px;outline:none;
+ font-family:'DM Sans',sans-serif}
+#q::placeholder{color:#727272}
+.gobtn{background:var(--accent);color:#000;border:0;padding:0 28px;border-radius:9999px;
+ font-weight:700;font-size:13px;text-transform:uppercase;letter-spacing:1.4px;cursor:pointer;transition:transform .1s;
+ font-family:'DM Sans',sans-serif}
+.gobtn:active{transform:scale(.96)}
+.modes{display:flex;gap:8px;margin-bottom:14px}
+.mode{flex:0 0 auto;background:var(--bg2);border:0;color:var(--muted);
+ padding:10px 20px;border-radius:9999px;font-size:13px;font-weight:700;cursor:pointer;transition:.15s;
+ text-transform:uppercase;letter-spacing:1.2px}
+.mode.active{background:var(--fg);color:#000}
+.opts{display:flex;gap:12px;align-items:center;font-size:13px;color:var(--muted);margin-bottom:16px;font-weight:400}
+.opts label{cursor:pointer;user-select:none}
+.opts input{accent-color:var(--accent)}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
+.chip{background:var(--bg2);border:0;color:var(--fg);padding:8px 16px;
+ border-radius:9999px;font-size:12.5px;font-weight:700;cursor:pointer;transition:.15s;white-space:nowrap;
+ text-transform:uppercase;letter-spacing:1px}
+.chip:hover{background:var(--card-h)}
+.chip.active{background:var(--accent);color:#000}
+.chip .n{opacity:.65;font-weight:500;margin-left:3px;text-transform:none;letter-spacing:0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--card);border:0;border-radius:8px;padding:16px;
+ display:flex;flex-direction:column;transition:.18s;position:relative;overflow:hidden;cursor:pointer}
+.card:hover{background:var(--card-h);box-shadow:rgba(0,0,0,.3) 0 8px 8px}
+.card .top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.user{color:var(--fg);font-size:14px;font-weight:700;text-decoration:none}
+.user:hover{text-decoration:underline;color:var(--accent)}
+.badge{font-size:10.5px;font-weight:600;padding:4px 10px;border-radius:9999px;white-space:nowrap;
+ text-transform:capitalize}
+.badge.cat{background:var(--bg2);color:var(--muted)}
+.badge.hi{background:rgba(30,215,96,.16);color:var(--accent)}
+.badge.mid{background:rgba(255,164,43,.16);color:var(--warn)}
+.badge.lo{background:var(--bg2);color:var(--muted)}
+.ctitle{font-size:15.5px;line-height:1.35;color:var(--fg);font-weight:700;margin-bottom:10px;
+ display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.meta{font-size:11px;color:var(--muted);margin-bottom:8px;font-family:monospace;opacity:.75}
+.mmeta{font-size:12px;color:var(--muted);margin-bottom:10px;font-family:monospace;opacity:.8}
+.card.viewed{opacity:.55}
+.badge.viewed{background:rgba(30,215,96,.14);color:var(--accent)}
+.badge.note{background:rgba(255,193,7,.14);color:#ffc107;cursor:help}
+.note-box{margin-top:14px}
+.note-box h4{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin:0 0 8px;font-weight:700}
+.note-ta{width:100%;background:var(--bg2);border:1px solid rgba(255,255,255,.08);border-radius:8px;
+  color:var(--fg);font-size:13.5px;line-height:1.5;padding:10px 12px;resize:vertical;min-height:60px;
+  font-family:inherit;box-sizing:border-box}
+.note-ta:focus{outline:none;border-color:var(--accent)}
+.note-save{margin-top:8px;background:var(--accent);color:#000;border:none;border-radius:6px;
+  padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.5px}
+.note-save:active{opacity:.8}
+.note-saved-flash{color:var(--accent);font-size:11px;margin-left:10px;opacity:0;transition:opacity .2s}
+.note-saved-flash.show{opacity:1}
+.cap{font-size:14px;line-height:1.5;color:var(--muted);white-space:pre-wrap;font-weight:400;overflow-wrap:anywhere;word-break:break-word;
+ display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.tr{font-size:12.5px;color:var(--muted);margin-top:10px;padding:9px 11px;background:var(--bg2);
+ border-radius:6px;line-height:1.45;font-weight:400;
+ display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.pending{font-size:11.5px;color:#727272;margin-top:10px;font-style:italic}
+.open{margin-top:12px;display:inline-flex;align-items:center;gap:6px;color:var(--fg);
+ text-decoration:none;font-size:12px;font-weight:700;padding:10px 0 0;
+ text-transform:uppercase;letter-spacing:1px}
+.open:hover{color:var(--accent)}
+.state{text-align:center;color:var(--muted);padding:60px 20px;font-size:15px;font-weight:400}
+.spin{width:32px;height:32px;border:3px solid var(--bg2);border-top-color:var(--accent);
+ border-radius:50%;animation:sp .7s linear infinite;margin:0 auto 16px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media(max-width:760px){
+  .chips{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;margin:0 -18px 18px;padding:0 18px 4px}
+  .chips::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto}
+}
+@media(max-width:560px){
+  .wrap{padding:16px 14px calc(90px + env(safe-area-inset-bottom))}
+  .grid{grid-template-columns:1fr;gap:12px}
+  h1{font-size:19px}
+  .logo{width:36px;height:36px;font-size:18px}
+  .sub{font-size:12px;gap:12px;margin-bottom:16px}
+  .searchwrap{top:calc(8px + env(safe-area-inset-top))}
+  #q{font-size:16px;padding:13px 14px}
+  .gobtn{padding:0 20px}
+  .mode{flex:1;text-align:center;padding:12px 8px}
+  .modes{gap:8px}
+  .card{padding:15px;border-radius:8px}
+  .card:hover{box-shadow:none}
+  .card:active{background:var(--card-h)}
+  .cap{-webkit-line-clamp:5}
+  .open,.mode{min-height:44px}
+  .modal-bg{align-items:flex-end;padding:0}
+  .modal{max-width:100%;max-height:90vh;border-radius:16px 16px 0 0;
+    padding:20px 18px calc(24px + env(safe-area-inset-bottom));animation:sheet .22s ease}
+  .modal .mopen{width:100%;justify-content:center;padding:14px}
+  .modal .close{width:38px;height:38px}
+}
+@keyframes sheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.progress{margin:0 0 22px}
+.progress .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:7px;font-weight:400}
+.progress .lbl b{color:var(--fg);font-weight:700}
+.bar{height:6px;background:var(--bg2);border-radius:9999px;overflow:hidden}
+.bar .fill{height:100%;background:var(--accent);border-radius:9999px;width:0;
+ transition:width .6s ease}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(6px);
+ display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal-bg.show{display:flex}
+.modal{background:var(--card);border:0;border-radius:8px;max-width:640px;
+ width:100%;max-height:82vh;overflow:auto;padding:24px;box-shadow:rgba(0,0,0,.5) 0 8px 24px;
+ animation:pop .18s ease}
+@keyframes pop{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+.modal .mtitle{font-size:19px;font-weight:700;line-height:1.3;color:var(--fg);margin-bottom:14px}
+.modal .mtop{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px}
+.modal .muser{color:var(--fg);font-size:16px;font-weight:700;text-decoration:none}
+.modal .close{background:var(--bg2);border:0;color:var(--fg);width:34px;height:34px;
+ border-radius:50%;font-size:18px;cursor:pointer;flex:0 0 auto;line-height:1}
+.modal h4{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--muted);margin:18px 0 8px;font-weight:700}
+.modal .mcap{font-size:14px;line-height:1.6;color:var(--muted);white-space:pre-wrap;font-weight:400;overflow-wrap:anywhere;word-break:break-word}
+.modal .mtr{font-size:14px;line-height:1.65;color:#cbcbcb;white-space:pre-wrap;font-weight:400;overflow-wrap:anywhere;word-break:break-word;
+ background:var(--bg2);border-radius:6px;padding:14px 16px}
+.modal .mopen{display:inline-flex;gap:7px;margin-top:20px;background:var(--accent);color:#000;
+ text-decoration:none;font-weight:700;font-size:13px;padding:12px 24px;border-radius:9999px;
+ text-transform:uppercase;letter-spacing:1.2px}
+
+/* Digest */
+.digest-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.refresh-btn{background:var(--bg2);border:0;color:var(--fg);padding:10px 18px;border-radius:9999px;
+ font-weight:700;font-size:12.5px;cursor:pointer;text-transform:uppercase;letter-spacing:1px}
+.refresh-btn:hover{background:var(--card-h)}
+.refresh-btn:active{transform:scale(.96)}
+
+/* Playbooks */
+.pb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;margin-bottom:10px}
+.pb-card{background:var(--card);border-radius:8px;padding:20px;cursor:pointer;transition:.18s;
+ display:flex;flex-direction:column;gap:8px}
+.pb-card:hover{background:var(--card-h)}
+.pb-card .pb-title{font-size:16px;font-weight:700;color:var(--fg)}
+.pb-card .pb-sub{font-size:12.5px;color:var(--muted);font-weight:400}
+.pb-back{background:var(--bg2);border:0;color:var(--fg);padding:10px 18px;border-radius:9999px;
+ font-weight:700;font-size:12.5px;cursor:pointer;margin-bottom:18px;text-transform:uppercase;letter-spacing:1px}
+.pb-content{background:var(--card);border-radius:8px;padding:24px 26px;line-height:1.7;font-weight:400}
+.pb-content,.pb-content *{overflow-wrap:anywhere;word-break:break-word}
+.pb-content h1{font-size:20px;font-weight:700;margin:0 0 6px;color:var(--fg)}
+.pb-content h2{font-size:15px;font-weight:700;margin:26px 0 12px;color:var(--accent);
+ border-bottom:1px solid var(--line);padding-bottom:8px}
+.pb-content p{font-size:14px;color:var(--muted);margin:0 0 14px}
+.pb-content ul{padding-left:20px;margin:0 0 14px}
+.pb-content li{font-size:14px;color:#dcdcdc;margin-bottom:10px;line-height:1.6}
+.pb-content li strong,.pb-content strong{color:var(--fg);font-weight:700}
+.pb-content a{color:var(--accent);text-decoration:none}
+.pb-content a:hover{text-decoration:underline}
+
+/* Full-screen reader (Inshorts-style) */
+.reader{position:fixed;inset:0;background:var(--bg);z-index:200;display:none;flex-direction:column;
+ padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+.reader.show{display:flex}
+.r-head{padding:14px 18px 10px;flex-shrink:0}
+.r-progress{height:3px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.r-progress-fill{height:100%;background:var(--accent);transition:width .25s ease;width:0%}
+.r-headrow{display:flex;justify-content:space-between;align-items:center}
+.r-count{font-size:12.5px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.r-close{background:var(--bg2);border:0;color:var(--fg);width:34px;height:34px;border-radius:50%;
+ font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.r-body{flex:1;overflow-y:auto;padding:4px 18px 18px;overflow-wrap:anywhere;word-break:break-word}
+.r-title{font-size:21px;font-weight:700;line-height:1.3;color:var(--fg);margin-bottom:16px}
+.r-top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.r-user{color:var(--fg);font-size:15px;font-weight:700;text-decoration:none}
+.r-body h4{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1.2px;
+ font-weight:700;margin:18px 0 8px}
+.r-cap{font-size:14.5px;line-height:1.6;color:#dcdcdc;white-space:pre-wrap;font-weight:400}
+.r-tr{font-size:14.5px;line-height:1.7;color:#dcdcdc;white-space:pre-wrap;font-weight:400;
+ background:var(--bg2);border-radius:6px;padding:14px 16px}
+.r-open{display:inline-flex;gap:7px;margin-top:20px;color:#000;background:var(--accent);
+ text-decoration:none;font-weight:700;font-size:13.5px;padding:12px 22px;border-radius:9999px}
+.r-nav{display:flex;gap:10px;padding:14px 18px;flex-shrink:0;border-top:1px solid var(--line)}
+.r-nav-btn{flex:1;background:var(--bg2);border:0;color:var(--fg);padding:14px;border-radius:9999px;
+ font-weight:700;font-size:13.5px;cursor:pointer;text-transform:uppercase;letter-spacing:.8px;min-height:48px}
+.r-nav-btn.primary{background:var(--accent);color:#000}
+.r-nav-btn:active{transform:scale(.97)}
+@media(max-width:560px){
+  .r-title{font-size:19px}
+  .r-head{padding:12px 16px 8px}
+  .r-body{padding:4px 16px 16px}
+  .r-nav{padding:12px 16px}
+}
+
+@media(max-width:560px){
+  .pb-content{padding:18px}
+  .digest-head{flex-wrap:wrap;gap:10px}
+}
+</style></head><body>
+<div class="wrap">
+  <div class="head">
+    <div class="logo">🎞️</div>
+    <div><h1>Reel Memory</h1></div>
+  </div>
+  <div class="sub" id="stats"><span><span class="dot"></span>loading…</span></div>
+  <div class="progress" id="progress">
+    <div class="lbl"><span>Transcribing reels</span><span id="ptext">—</span></div>
+    <div class="bar"><div class="fill" id="pfill"></div></div>
+  </div>
+
+  <div class="modes">
+    <div class="mode active" data-mode="browse" onclick="setMode('browse')">Browse</div>
+    <div class="mode" data-mode="search" onclick="setMode('search')">Search</div>
+    <div class="mode" data-mode="digest" onclick="setMode('digest')">Digest</div>
+    <div class="mode" data-mode="playbooks" onclick="setMode('playbooks')">Playbooks</div>
+  </div>
+
+  <div class="searchwrap" id="searchwrap" style="display:none">
+    <div class="searchbar">
+      <input id="q" type="text" placeholder="what do you half-remember? e.g. the opus prompt library">
+      <button class="gobtn" onclick="go()">Search</button>
+    </div>
+  </div>
+  <div class="opts" id="opts" style="display:none">
+    <label><input type="checkbox" id="jev" checked> JEV smart rerank</label>
+    <span style="color:#727272">candidates by keyword → ranked by what you meant</span>
+  </div>
+
+  <div class="chips" id="chips"></div>
+  <div id="results"></div>
+</div>
+
+<script>
+const R=document.getElementById('results');
+const CHIPS=document.getElementById('chips');
+let MODE='browse';
+
+function esc(s){return (s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function relBadge(v){
+  if(v===null||v===undefined) return '';
+  const cls=v>=60?'hi':(v>=30?'mid':'lo');
+  return `<span class="badge ${cls}">${v}%</span>`;
+}
+let ITEMS=[];
+function deriveTitle(x){
+  // Build a short heading that actually describes the reel's content.
+  const stripNoise = (s) => s
+    .normalize('NFKC')                              // collapse stylized unicode (𝐵𝑜𝓁𝒹 -> Bold) back to plain letters
+    .replace(/https?:\/\/\S+/g,'')
+    .replace(/#[\w]+/g,'')
+    .replace(/@[\w.]+/g,'')
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu,'')
+    .replace(/\s+/g,' ')
+    .trim();
+  // Generic engagement-bait openers that say nothing about the actual content —
+  // skip these as headings even if they're the first caption line.
+  const isBoilerplate = (l) => /^(comment\s+["'“]?\w+["'”]?\s+(and|to)|drop\s+a|like\s+(this|and)|follow\s+(me|for)|dm\s+me|save\s+this|tag\s+someone|swipe\s+(to|for)|link\s+in\s+bio)/i.test(l);
+  if (x.caption){
+    const lines = x.caption.split('\n').map(stripNoise).filter(l=>l.length>12);
+    const good = lines.find(l=>!isBoilerplate(l)) || lines[0];
+    if (good) return good.slice(0,90) + (good.length>90?'\u2026':'');
+  }
+  if (x.transcript){
+    const clean = stripNoise(x.transcript);
+    const m = clean.match(/^.*?[.!?](?=\s|$)/); const firstSentence = (m ? m[0] : clean);
+    if (firstSentence.length>10) return firstSentence.slice(0,90) + (firstSentence.length>90?'\u2026':'');
+  }
+  return 'Saved reel';
+}
+function fmtDate(ts){
+  if(!ts) return '';
+  const d = new Date(ts*1000);
+  if(isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0,10);
+}
+function markViewed(x){
+  if(!x || !x.id || x.viewed) return;
+  x.viewed = true;
+  fetch('/mark_viewed/'+encodeURIComponent(x.id), {method:'POST'}).catch(()=>{});
+}
+function noteBox(x, idPrefix){
+  return `<div class="note-box">
+    <h4>Your Note</h4>
+    <textarea class="note-ta" id="${idPrefix}-ta" placeholder="Jot why you saved this / what to do with it…">${esc(x.comment||'')}</textarea>
+    <button class="note-save" onclick="saveComment('${esc(x.id)}','${idPrefix}')">Save note</button>
+    <span class="note-saved-flash" id="${idPrefix}-flash">Saved ✓</span>
+  </div>`;
+}
+function saveComment(id, idPrefix){
+  const ta=document.getElementById(idPrefix+'-ta');
+  const text=ta.value;
+  fetch('/comment/'+encodeURIComponent(id), {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({comment:text})
+  }).then(()=>{
+    const item = ITEMS.find(x=>x && x.id===id);
+    if(item) item.comment = text;
+    const flash=document.getElementById(idPrefix+'-flash');
+    if(flash){ flash.classList.add('show'); setTimeout(()=>flash.classList.remove('show'),1500); }
+  }).catch(()=>{});
+}
+function card(x,i,isBrowse,useReader){
+  const title = deriveTitle(x);
+  let tr='';
+  if(x.transcript && (x.status==='done'||isBrowse))
+    tr=`<div class="tr">${esc(x.transcript.slice(0,260))}</div>`;
+  else if(x.status==='pending') tr=`<div class="pending">transcript pending…</div>`;
+  const right = isBrowse ? `<span class="badge cat">${x.category||''}</span>` : relBadge(x.relevance);
+  const viewedBadge = x.viewed ? `<span class="badge viewed">✓ seen</span>` : '';
+  const commentBadge = x.comment ? `<span class="badge note" title="${esc(x.comment)}">📝</span>` : '';
+  const openFn = useReader ? `openReader(${i})` : `openModal(${i})`;
+  return `<div class="card${x.viewed?' viewed':''}" onclick="${openFn}">
+    <div class="ctitle">${esc(title)}</div>
+    <div class="top">
+      <a class="user" href="https://instagram.com/${esc(x.user)}" target="_blank" onclick="event.stopPropagation()">@${esc(x.user)}</a>
+      ${commentBadge}${viewedBadge}${right}
+    </div>
+    <div class="meta">${esc(x.id||'')}${x.id&&x.date?' · ':''}${fmtDate(x.date)}</div>${tr}
+    <a class="open" href="${x.url}" target="_blank" onclick="event.stopPropagation()">Open reel →</a>
+  </div>`;
+}
+function openModal(i){
+  const x=ITEMS[i]; if(!x)return;
+  markViewed(x);
+  const title = deriveTitle(x);
+  const tr = x.transcript ? `<h4>Transcript</h4><div class="mtr">${esc(x.transcript)}</div>`
+    : (x.status==='pending' ? '<h4>Transcript</h4><div class="mtr" style="color:#727272;font-style:italic">Not transcribed yet.</div>' : '');
+  const cap = x.caption ? `<h4>Caption</h4><div class="mcap">${esc(x.caption)}</div>` : '';
+  const badge = x.category ? `<span class="badge cat">${x.category}</span>`
+    : (x.relevance!=null?relBadge(x.relevance):'');
+  document.getElementById('mbody').innerHTML=`
+    <div class="mtitle">${esc(title)}</div>
+    <div class="mtop">
+      <a class="muser" href="https://instagram.com/${esc(x.user)}" target="_blank">@${esc(x.user)}</a>
+      ${badge}
+      <button class="close" onclick="closeModal()">×</button>
+    </div>
+    <div class="mmeta">${esc(x.id||'')}${x.id&&x.date?' · ':''}${fmtDate(x.date)}${x.viewed?' · ✓ seen':''}</div>${cap}${tr}
+    ${noteBox(x,'m')}
+    <a class="mopen" href="${x.url}" target="_blank">Open on Instagram →</a>`;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+
+function setMode(m){
+  MODE=m;
+  document.querySelectorAll('.mode').forEach(t=>t.classList.toggle('active',t.dataset.mode===m));
+  document.getElementById('searchwrap').style.display=m==='search'?'block':'none';
+  document.getElementById('opts').style.display=m==='search'?'flex':'none';
+  CHIPS.style.display=m==='browse'?'flex':'none';
+  R.innerHTML='';
+  if(m==='browse'){ loadBrowse('all'); }
+  else if(m==='search'){ CHIPS.innerHTML=''; document.getElementById('q').focus();
+         R.innerHTML='<div class="state">Type above to search your saved reels.</div>'; }
+  else if(m==='digest'){ loadDigest(); }
+  else if(m==='playbooks'){ loadPlaybooks(); }
+}
+
+/* ---------- Digest ---------- */
+async function loadDigest(){
+  R.innerHTML='<div class="state"><div class="spin"></div>Picking reels you forgot about…</div>';
+  let d;
+  try{ d=await(await fetch('/digest?n=10')).json(); }
+  catch(e){ R.innerHTML='<div class="state">Failed to load digest. Retry?</div>'; return; }
+  const picks=d.picks||[];
+  if(!picks.length){R.innerHTML='<div class="state">No digest picks available yet.</div>';return;}
+  ITEMS=picks.map(p=>({id:p.id,url:p.url,user:p.username,caption:p.caption,transcript:p.transcript,category:p.category,status:'done',date:p.date,viewed:p.viewed,comment:p.comment}));
+  R.className='';
+  R.innerHTML=`<div class="digest-head"><span class="sub" style="margin:0">Random picks you saved and forgot about — tap one to flip through all of them</span>`+
+    `<button class="refresh-btn" onclick="loadDigest()">🔀 Shuffle</button></div>`+
+    `<div class="grid">${ITEMS.map((x,i)=>card(x,i,true,true)).join('')}</div>`;
+}
+
+/* ---------- Full-screen reader (Inshorts-style) ---------- */
+let READER_I=0;
+function readerContent(x){
+  const title=deriveTitle(x);
+  const cap=x.caption?`<h4>Caption</h4><div class="r-cap">${esc(x.caption)}</div>`:'';
+  const tr=x.transcript?`<h4>Transcript</h4><div class="r-tr">${esc(x.transcript)}</div>`
+    :(x.status==='pending'?'<h4>Transcript</h4><div class="r-tr" style="color:#727272;font-style:italic">Not transcribed yet.</div>':'');
+  const badge=x.category?`<span class="badge cat">${x.category}</span>`:(x.relevance!=null?relBadge(x.relevance):'');
+  return `<div class="r-title">${esc(title)}</div>
+    <div class="r-top">
+      <a class="r-user" href="https://instagram.com/${esc(x.user)}" target="_blank">@${esc(x.user)}</a>
+      ${badge}
+    </div>${cap}${tr}
+    ${noteBox(x,'r')}
+    <a class="r-open" href="${x.url}" target="_blank">Open on Instagram →</a>`;
+}
+function renderReader(){
+  const x=ITEMS[READER_I]; if(!x)return;
+  markViewed(x);
+  document.getElementById('r-body').innerHTML=readerContent(x);
+  document.getElementById('r-progress-fill').style.width=((READER_I+1)/ITEMS.length*100)+'%';
+  document.getElementById('r-progress-lbl').textContent=(READER_I+1)+' / '+ITEMS.length;
+  document.getElementById('r-prev').style.visibility = READER_I>0 ? 'visible':'hidden';
+  document.getElementById('r-next').textContent = READER_I<ITEMS.length-1 ? 'Next ↓' : 'Done ✓';
+  document.getElementById('r-body').scrollTop=0;
+}
+function openReader(i){
+  READER_I=i;
+  document.getElementById('reader').classList.add('show');
+  document.body.style.overflow='hidden';
+  renderReader();
+  markViewed(ITEMS[i]);
+}
+function closeReader(){
+  document.getElementById('reader').classList.remove('show');
+  document.body.style.overflow='';
+}
+function readerNext(){
+  if(READER_I>=ITEMS.length-1){ closeReader(); return; }
+  READER_I++; renderReader();
+}
+function readerPrev(){
+  if(READER_I<=0) return;
+  READER_I--; renderReader();
+}
+document.addEventListener('keydown', function(e){
+  if(!document.getElementById('reader').classList.contains('show')) return;
+  if(e.key==='ArrowDown'||e.key==='ArrowRight') readerNext();
+  else if(e.key==='ArrowUp'||e.key==='ArrowLeft') readerPrev();
+  else if(e.key==='Escape') closeReader();
+});
+let touchStartY=null, touchStartAtTop=false, touchStartAtBottom=false;
+document.addEventListener('touchstart', function(e){
+  if(!document.getElementById('reader').classList.contains('show')) return;
+  touchStartY=e.touches[0].clientY;
+  const body=document.getElementById('r-body');
+  // Capture edge state BEFORE this gesture scrolls anything, so a normal
+  // scroll that merely *lands* on an edge this gesture doesn't falsely nav.
+  touchStartAtTop = body.scrollTop<=2;
+  touchStartAtBottom = body.scrollTop+body.clientHeight >= body.scrollHeight-2;
+}, {passive:true});
+document.addEventListener('touchend', function(e){
+  if(touchStartY===null || !document.getElementById('reader').classList.contains('show')) return;
+  const dy=e.changedTouches[0].clientY-touchStartY;
+  // Only treat as a nav-swipe if the gesture is a deliberate flick AND the content
+  // was ALREADY at that edge before this swipe started (so reading-scroll never
+  // double-counts as an accidental next/prev).
+  if(Math.abs(dy)>90){
+    if(dy<0 && touchStartAtBottom) readerNext();
+    else if(dy>0 && touchStartAtTop) readerPrev();
+  }
+  touchStartY=null;
+}, {passive:true});
+
+/* ---------- Playbooks ---------- */
+function mdToHtml(md){
+  const lines=md.split('\n');
+  let html='',inList=false;
+  for(let raw of lines){
+    let line=raw.trim();
+    if(!line){ if(inList){html+='</ul>';inList=false;} continue; }
+    if(line.startsWith('# ')){ if(inList){html+='</ul>';inList=false;} html+=`<h1>${inlineMd(line.slice(2))}</h1>`; continue; }
+    if(line.startsWith('## ')){ if(inList){html+='</ul>';inList=false;} html+=`<h2>${inlineMd(line.slice(3))}</h2>`; continue; }
+    if(line.startsWith('### ')){ if(inList){html+='</ul>';inList=false;} html+=`<h2>${inlineMd(line.slice(4))}</h2>`; continue; }
+    if(line.startsWith('- ')||line.startsWith('* ')){
+      if(!inList){html+='<ul>';inList=true;}
+      html+=`<li>${inlineMd(line.slice(2))}</li>`; continue;
+    }
+    if(inList){html+='</ul>';inList=false;}
+    html+=`<p>${inlineMd(line)}</p>`;
+  }
+  if(inList)html+='</ul>';
+  return html;
+}
+function inlineMd(s){
+  s=s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  s=s.replace(/\[([^\]]+)\]\(([^)]+)\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>');
+  s=s.replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>');
+  return s;
+}
+async function loadPlaybooks(){
+  R.innerHTML='<div class="state"><div class="spin"></div>Loading playbooks…</div>';
+  let d;
+  try{ d=await(await fetch('/playbooks')).json(); }
+  catch(e){ R.innerHTML='<div class="state">Failed to load playbooks.</div>'; return; }
+  const pbs=(d.playbooks||[]).filter(p=>p.available);
+  if(!pbs.length){R.innerHTML='<div class="state">No playbooks generated yet.</div>';return;}
+  R.className='';
+  R.innerHTML=`<div class="pb-grid">${pbs.map(p=>
+    `<div class="pb-card" onclick="openPlaybook('${p.key}')"><div class="pb-title">${esc(p.label)}</div><div class="pb-sub">Tap to open cheatsheet</div></div>`
+  ).join('')}</div>`;
+}
+async function openPlaybook(key){
+  R.innerHTML='<div class="state"><div class="spin"></div>Loading…</div>';
+  let d;
+  try{ d=await(await fetch('/playbook/'+key)).json(); }
+  catch(e){ R.innerHTML='<div class="state">Failed to load playbook.</div>'; return; }
+  if(d.error){ R.innerHTML='<div class="state">Not generated yet.</div>'; return; }
+  R.className='';
+  R.innerHTML=`<button class="pb-back" onclick="loadPlaybooks()">← All Playbooks</button>`+
+    `<div class="pb-content">${mdToHtml(d.markdown)}</div>`;
+}
+
+async function loadStats(){
+  try{
+    const s=await(await fetch('/stats')).json();
+    document.getElementById('stats').innerHTML=
+      `<span><span class="dot"></span><b>${s.done}</b> transcribed</span>`+
+      `<span><b>${s.pending}</b> pending</span>`+
+      `<span><b>${s.total_reels}</b> total reels</span>`;
+    document.getElementById('ptext').innerHTML=`<b>${s.done}</b> / ${s.total_reels} · ${s.pct}%`;
+    document.getElementById('pfill').style.width=Math.max(s.pct,0.5)+'%';
+  }catch(e){}
+}
+
+async function loadBrowse(cat){
+  R.className='';R.innerHTML='<div class="state"><div class="spin"></div>Loading your reels…</div>';
+  let d;
+  try{ d=await(await fetch('/browse?cat='+encodeURIComponent(cat))).json(); }
+  catch(e){ R.innerHTML='<div class="state">Failed to load. Retry?</div>'; return; }
+  CHIPS.innerHTML=`<div class="chip ${cat==='all'?'active':''}" onclick="loadBrowse('all')">All <span class="n">${d.total}</span></div>`+
+    d.cats.map(c=>`<div class="chip ${cat===c.key?'active':''}" onclick="loadBrowse('${c.key}')">${c.label} <span class="n">${c.count}</span></div>`).join('');
+  if(!d.results.length){R.innerHTML='<div class="state">Nothing here yet. Transcription is still running.</div>';return;}
+  ITEMS=d.results;
+  R.className='grid';
+  R.innerHTML=d.results.map((x,i)=>card(x,i,true)).join('');
+}
+
+async function go(){
+  const q=document.getElementById('q').value.trim(); if(!q)return;
+  R.className='';R.innerHTML='<div class="state"><div class="spin"></div>Searching…</div>';
+  const jev=document.getElementById('jev').checked?'1':'0';
+  let d;
+  try{ d=await(await fetch(`/search?q=${encodeURIComponent(q)}&jev=${jev}`)).json(); }
+  catch(e){ R.innerHTML='<div class="state">Search failed. Retry?</div>'; return; }
+  if(!d.results.length){R.innerHTML='<div class="state">No matches. Try broader words (transcripts still filling in).</div>';return;}
+  ITEMS=d.results;
+  R.className='grid';
+  R.innerHTML=d.results.map((x,i)=>card(x,i,false)).join('');
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'&&document.activeElement.id==='q')go();
+  if(e.key==='Escape')closeModal();
+});
+setInterval(loadStats,20000);
+// init
+loadStats();
+setMode('browse');
+</script><div class="modal-bg" id="modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="mbody"></div>
+</div>
+<div class="reader" id="reader">
+  <div class="r-head">
+    <div class="r-progress"><div class="r-progress-fill" id="r-progress-fill"></div></div>
+    <div class="r-headrow">
+      <span class="r-count" id="r-progress-lbl">1 / 1</span>
+      <button class="r-close" onclick="closeReader()">×</button>
+    </div>
+  </div>
+  <div class="r-body" id="r-body"></div>
+  <div class="r-nav">
+    <button class="r-nav-btn" id="r-prev" onclick="readerPrev()">↑ Prev</button>
+    <button class="r-nav-btn primary" id="r-next" onclick="readerNext()">Next ↓</button>
+  </div>
+</div>
+</body></html>
