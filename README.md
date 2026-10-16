@@ -1,4 +1,4 @@
-# Reel Memory
+# Insta Reel Memory
 
 Turn your Instagram "Saved" reels into a personal, searchable knowledge base
 instead of a graveyard you never revisit.
@@ -41,8 +41,8 @@ resurfaces old saves instead of burying them.
 ## Quick start
 
 ```bash
-git clone <this-repo>
-cd reel-memory
+git clone https://github.com/Abhinesh2602/insta-reel-memory.git
+cd insta-reel-memory
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
